@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Enquiry & Demo Booking</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #172033;
+        }
+
+        header {
+            background: #173b70;
+            color: white;
+            padding: 24px;
+        }
+
+        header h1 { margin: 0 0 8px; font-size: 25px; }
+        header p { margin: 0; }
+        header a { color: white; display: inline-block; margin-top: 16px; }
+
+        main {
+            max-width: 1100px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
+        }
+
+        section {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #0000000d;
+        }
+
+        h2 { margin-top: 0; }
+        label { display: block; margin: 16px 0 6px; font-weight: 600; }
+
+        input, select, button {
+            width: 100%;
+            padding: 11px;
+            border-radius: 6px;
+            font: inherit;
+        }
+
+        input, select { border: 1px solid #cbd5e1; }
+
+        button {
+            margin-top: 20px;
+            background: #173b70;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:disabled { opacity: 0.6; cursor: wait; }
+
+        .result {
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .success { background: #dcfce7; color: #14532d; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .hint { color: #64748b; font-size: 14px; }
+
+        @media (max-width: 750px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>Komali Mam Institute of Excellence</h1>
+    <p>Student Enquiry & Demo Booking</p>
+    <a href="/counsellor.html">Open Counsellor Dashboard</a>
+</header>
+
+<main>
+    <div class="grid">
+        <section>
+            <h2>Student Enquiry</h2>
+            <p class="hint">Fields marked * are required.</p>
+
+            <form id="enquiryForm">
+                <label for="name">Student name *</label>
+                <input id="name" name="name" required maxlength="100"
+                       autocomplete="name">
+
+                <label for="mobile">Mobile number *</label>
+                <input id="mobile" name="mobile" type="tel"
+                       required pattern="[0-9]{10}" maxlength="10"
+                       inputmode="numeric" autocomplete="tel"
+                       title="Enter exactly 10 digits">
+
+                <label for="email">Email — optional</label>
+                <input id="email" name="email" type="email"
+                       maxlength="254" autocomplete="email">
+
+                <label for="studentClass">Class *</label>
+                <select id="studentClass" required>
+                    <option value="">Select class</option>
+                    <option value="11">Class 11</option>
+                    <option value="12">Class 12</option>
+                </select>
+
+                <label for="course">Course *</label>
+                <select id="course" required>
+                    <option value="">Select course</option>
+                    <option value="NEET Chemistry">NEET Chemistry</option>
+                    <option value="JEE Chemistry">JEE Chemistry</option>
+                </select>
+
+                <label for="enquirySource">Enquiry source *</label>
+                <input id="enquirySource" required maxlength="100"
+                       placeholder="Website, Walk-in, Instagram, Referral...">
+
+                <label for="enquiryDateTime">Enquiry date/time *</label>
+                <input id="enquiryDateTime" type="datetime-local" required>
+
+                <button id="enquiryButton" type="submit">Save Enquiry</button>
+            </form>
+
+            <div id="enquiryResult" class="result" role="status" hidden></div>
+        </section>
+
+        <section>
+            <h2>Book a Demo</h2>
+            <p class="hint">
+                Save an enquiry first. Its student ID will be filled here
+                automatically. Existing students can use their student ID.
+            </p>
+
+            <form id="bookingForm">
+                <label for="studentId">Student ID *</label>
+                <input id="studentId" type="number" min="1" step="1" required>
+
+                <label for="demoDate">Demo date *</label>
+                <input id="demoDate" type="date" required>
+
+                <label for="demoSlot">Demo slot *</label>
+                <select id="demoSlot" required>
+                    <option value="">Select slot</option>
+                    <option value="SLOT_1_PM">1 PM</option>
+                    <option value="SLOT_3_PM">3 PM</option>
+                    <option value="SLOT_5_PM">5 PM</option>
+                    <option value="SLOT_7_PM">7 PM</option>
+                </select>
+
+                <button id="bookingButton" type="submit">Book Demo</button>
+            </form>
+
+            <div id="bookingResult" class="result" role="status" hidden></div>
+        </section>
+    </div>
+</main>
+
+<script>
+    const byId = id => document.getElementById(id);
+
+    function localDateTime() {
+        const now = new Date();
+        const pad = value => String(value).padStart(2, "0");
+
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+            + `T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+
+    byId("enquiryDateTime").value = localDateTime();
+    byId("demoDate").min = localDateTime().slice(0, 10);
+
+    function showResult(id, message, success) {
+        const element = byId(id);
+        element.hidden = false;
+        element.className = `result ${success ? "success" : "error"}`;
+        element.textContent = message;
+    }
+
+    function errorMessage(data) {
+        const fields = data.fieldErrors
+            ? Object.entries(data.fieldErrors)
+                .map(([field, message]) => `${field}: ${message}`)
+                .join("\n")
+            : "";
+
+        return [data.message || data.error || "Request failed.", fields]
+            .filter(Boolean)
+            .join("\n");
+    }
+
+    async function sendJson(url, body) {
+        let response;
+
+        try {
+            response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+        } catch {
+            throw new Error(
+                "Unable to reach the server. Check that the application "
+                + "is running. Before retrying, check whether the record "
+                + "was saved in the counsellor dashboard."
+            );
+        }
+
+        let data;
+
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error(
+                `The server returned an unreadable response (HTTP ${response.status}).`
+            );
+        }
+
+        if (!response.ok) {
+            throw new Error(errorMessage(data));
+        }
+
+        return data;
+    }
+
+    byId("enquiryForm").addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const button = byId("enquiryButton");
+        button.disabled = true;
+        byId("enquiryResult").hidden = true;
+
+        const dateTime = byId("enquiryDateTime").value;
+
+        const body = {
+            name: byId("name").value.trim(),
+            mobile: byId("mobile").value.trim(),
+            email: byId("email").value.trim(),
+            studentClass: byId("studentClass").value,
+            course: byId("course").value,
+            enquirySource: byId("enquirySource").value.trim(),
+            enquiryDateTime: dateTime.length === 16
+                ? dateTime + ":00"
+                : dateTime
+        };
+
+        try {
+            const data = await sendJson("/api/enquiries", body);
+
+            byId("studentId").value = data.studentId;
+
+            showResult(
+                "enquiryResult",
+                `${data.message}\nStudent ID: ${data.studentId}`
+                + `\nEnquiry ID: ${data.enquiryId}`
+                + `\nStudent: ${data.studentName}`,
+                true
+            );
+        } catch (error) {
+            showResult("enquiryResult", error.message, false);
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+    byId("bookingForm").addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const button = byId("bookingButton");
+        button.disabled = true;
+        byId("bookingResult").hidden = true;
+
+        const body = {
+            studentId: Number(byId("studentId").value),
+            demoDate: byId("demoDate").value,
+            demoSlot: byId("demoSlot").value
+        };
+
+        try {
+            const data = await sendJson("/api/bookings", body);
+
+            showResult(
+                "bookingResult",
+                `${data.confirmationMessage}\nStatus: ${data.status}`,
+                true
+            );
+        } catch (error) {
+            showResult("bookingResult", error.message, false);
+        } finally {
+            button.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

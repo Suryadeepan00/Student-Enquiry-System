@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counsellor Dashboard</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #172033;
+        }
+
+        header {
+            padding: 24px;
+            background: #173b70;
+            color: white;
+        }
+
+        header h1 { margin: 0 0 12px; }
+        header a { color: white; }
+
+        main {
+            max-width: 1400px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+
+        section {
+            margin-bottom: 24px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        h2 { margin-top: 0; }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .card {
+            padding: 18px;
+            border: 1px solid #dbe3ef;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .card span {
+            display: block;
+            margin-top: 10px;
+            color: #173b70;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .filters {
+            display: flex;
+            align-items: end;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        input, select, button {
+            padding: 9px;
+            border-radius: 6px;
+            font: inherit;
+        }
+
+        input, select { border: 1px solid #cbd5e1; }
+
+        button {
+            background: #173b70;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:disabled { opacity: 0.6; cursor: wait; }
+        .secondary { background: #475569; }
+
+        .table-wrap { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+
+        th { background: #eef3fa; white-space: nowrap; }
+        td select { margin-bottom: 6px; }
+        td button { margin-left: 6px; }
+
+        .hint { color: #64748b; font-size: 14px; }
+
+        #notice {
+            padding: 14px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+        }
+
+        .success { background: #dcfce7; color: #14532d; }
+        .error { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>KMIE Counsellor Dashboard</h1>
+    <a href="/">← Student Enquiry & Demo Booking</a>
+</header>
+
+<main>
+    <div id="notice" role="status" hidden></div>
+
+    <section>
+        <h2>Summary</h2>
+
+        <div class="cards">
+            <div class="card">
+                Total enquiries
+                <span id="totalEnquiries">—</span>
+            </div>
+
+            <div class="card">
+                Total demo bookings
+                <span id="totalDemosBooked">—</span>
+            </div>
+
+            <div class="card">
+                Currently booked
+                <span id="currentlyBooked">—</span>
+            </div>
+
+            <div class="card">
+                Demos attended
+                <span id="totalDemosAttended">—</span>
+            </div>
+
+            <div class="card">
+                Demos cancelled
+                <span id="totalDemosCancelled">—</span>
+            </div>
+        </div>
+
+        <p class="hint">
+            Summary counts cover all records, regardless of table filters.
+            Total demo bookings includes booked, attended and cancelled records.
+        </p>
+
+        <button id="refreshButton" type="button">Refresh All</button>
+    </section>
+
+    <section>
+        <h2>Student Enquiries</h2>
+
+        <form id="enquiryFilters" class="filters">
+            <div>
+                <label for="enquiryDate">Enquiry date</label>
+                <input id="enquiryDate" type="date">
+            </div>
+
+            <button type="submit">Apply Filter</button>
+            <button id="clearEnquiry" type="button" class="secondary">
+                Clear
+            </button>
+        </form>
+
+        <p id="enquiryInfo" class="hint" role="status"></p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Enquiry ID</th>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Mobile</th>
+                    <th>Email</th>
+                    <th>Class</th>
+                    <th>Course</th>
+                    <th>Source</th>
+                    <th>Date/time</th>
+                </tr>
+                </thead>
+                <tbody id="enquiryRows"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <h2>Demo Bookings</h2>
+
+        <form id="bookingFilters" class="filters">
+            <div>
+                <label for="bookingDate">Demo date</label>
+                <input id="bookingDate" type="date">
+            </div>
+
+            <div>
+                <label for="bookingStatus">Booking status</label>
+                <select id="bookingStatus">
+                    <option value="">All statuses</option>
+                    <option value="BOOKED">Booked</option>
+                    <option value="ATTENDED">Attended</option>
+                    <option value="CANCELLED">Cancelled</option>
+                </select>
+            </div>
+
+            <button type="submit">Apply Filters</button>
+            <button id="clearBooking" type="button" class="secondary">
+                Clear
+            </button>
+        </form>
+
+        <p id="bookingInfo" class="hint" role="status"></p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Mobile</th>
+                    <th>Demo date</th>
+                    <th>Slot</th>
+                    <th>Current status</th>
+                    <th>Update status</th>
+                </tr>
+                </thead>
+                <tbody id="bookingRows"></tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<script>
+    const byId = id => document.getElementById(id);
+
+    const summaryKeys = [
+        "totalEnquiries",
+        "totalDemosBooked",
+        "currentlyBooked",
+        "totalDemosAttended",
+        "totalDemosCancelled"
+    ];
+
+    function showNotice(message, success) {
+        const notice = byId("notice");
+        notice.hidden = false;
+        notice.className = success ? "success" : "error";
+        notice.textContent = message;
+    }
+
+    async function api(url, options = {}) {
+        let response;
+
+        try {
+            response = await fetch(url, options);
+        } catch {
+            throw new Error(
+                "Unable to reach the server. Check that the application "
+                + "is running. Refresh records before retrying an update."
+            );
+        }
+
+        let data;
+
+        try {
+            data = await response.json();
+        } catch {
+            throw new Error(
+                `Unreadable server response (HTTP ${response.status}).`
+            );
+        }
+
+        if (!response.ok) {
+            const details = data.fieldErrors
+                ? Object.values(data.fieldErrors).join("\n")
+                : "";
+
+            throw new Error(
+                [data.message || `Request failed (HTTP ${response.status}).`,
+                 details].filter(Boolean).join("\n")
+            );
+        }
+
+        return data;
+    }
+
+    function addCell(row, value) {
+        const cell = document.createElement("td");
+        cell.textContent =
+            value === null || value === undefined || value === ""
+                ? "—"
+                : String(value);
+
+        row.appendChild(cell);
+        return cell;
+    }
+
+    async function loadSummary() {
+        summaryKeys.forEach(key => byId(key).textContent = "…");
+
+        try {
+            const data = await api("/api/dashboard");
+            summaryKeys.forEach(key => {
+                byId(key).textContent = data[key] ?? "—";
+            });
+        } catch (error) {
+            summaryKeys.forEach(key => byId(key).textContent = "—");
+            throw error;
+        }
+    }
+
+    async function loadEnquiries() {
+        const tbody = byId("enquiryRows");
+        const info = byId("enquiryInfo");
+
+        tbody.replaceChildren();
+        info.textContent = "Loading enquiries...";
+
+        const params = new URLSearchParams();
+        if (byId("enquiryDate").value) {
+            params.set("date", byId("enquiryDate").value);
+        }
+
+        try {
+            const data = await api("/api/enquiries?" + params.toString());
+
+            data.forEach(enquiry => {
+                const row = document.createElement("tr");
+
+                [
+                    enquiry.enquiryId,
+                    enquiry.studentId,
+                    enquiry.studentName,
+                    enquiry.mobile,
+                    enquiry.email,
+                    enquiry.studentClass,
+                    enquiry.course,
+                    enquiry.enquirySource,
+                    enquiry.enquiryDateTime?.replace("T", " ")
+                ].forEach(value => addCell(row, value));
+
+                tbody.appendChild(row);
+            });
+
+            info.textContent = data.length
+                ? `${data.length} enquiry record(s) shown.`
+                : "No enquiries match the selected date.";
+        } catch (error) {
+            info.textContent = "Could not load enquiries.";
+            throw error;
+        }
+    }
+
+    async function loadBookings() {
+        const tbody = byId("bookingRows");
+        const info = byId("bookingInfo");
+
+        tbody.replaceChildren();
+        info.textContent = "Loading bookings...";
+
+        const params = new URLSearchParams();
+
+        if (byId("bookingDate").value) {
+            params.set("date", byId("bookingDate").value);
+        }
+
+        if (byId("bookingStatus").value) {
+            params.set("status", byId("bookingStatus").value);
+        }
+
+        try {
+            const data = await api("/api/bookings?" + params.toString());
+
+            data.forEach(booking => {
+                const row = document.createElement("tr");
+
+                [
+                    booking.bookingId,
+                    booking.studentId,
+                    booking.studentName,
+                    booking.mobile,
+                    booking.demoDate,
+                    booking.slotLabel,
+                    booking.status
+                ].forEach(value => addCell(row, value));
+
+                const actionCell = document.createElement("td");
+                const select = document.createElement("select");
+
+                select.setAttribute(
+                    "aria-label",
+                    `New status for booking ${booking.bookingId}`
+                );
+
+                ["BOOKED", "ATTENDED", "CANCELLED"].forEach(status => {
+                    const option = document.createElement("option");
+                    option.value = status;
+                    option.textContent = status;
+                    select.appendChild(option);
+                });
+
+                select.value = booking.status;
+
+                const saveButton = document.createElement("button");
+                saveButton.type = "button";
+                saveButton.textContent = "Save";
+
+                saveButton.addEventListener("click", async () => {
+                    saveButton.disabled = true;
+                    select.disabled = true;
+                    byId("notice").hidden = true;
+
+                    try {
+                        const result = await api(
+                            `/api/bookings/${booking.bookingId}/status`,
+                            {
+                                method: "PATCH",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    status: select.value
+                                })
+                            }
+                        );
+
+                        showNotice(
+                            `${result.message} Booking ${result.bookingId}: `
+                            + result.status,
+                            true
+                        );
+
+                        const results = await Promise.allSettled([
+                            loadBookings(),
+                            loadSummary()
+                        ]);
+
+                        const failure = results.find(
+                            result => result.status === "rejected"
+                        );
+
+                        if (failure) {
+                            showNotice(
+                                "Status saved, but the display could not "
+                                + "be refreshed. " + failure.reason.message,
+                                false
+                            );
+                        }
+                    } catch (error) {
+                        showNotice(error.message, false);
+                    } finally {
+                        saveButton.disabled = false;
+                        select.disabled = false;
+                    }
+                });
+
+                actionCell.append(select, saveButton);
+                row.appendChild(actionCell);
+                tbody.appendChild(row);
+            });
+
+            info.textContent = data.length
+                ? `${data.length} booking record(s) shown.`
+                : "No bookings match the selected filters.";
+        } catch (error) {
+            info.textContent = "Could not load bookings.";
+            throw error;
+        }
+    }
+
+    async function runAction(action) {
+        byId("notice").hidden = true;
+
+        try {
+            await action();
+        } catch (error) {
+            showNotice(error.message, false);
+        }
+    }
+
+    async function refreshAll() {
+        const button = byId("refreshButton");
+        button.disabled = true;
+        byId("notice").hidden = true;
+
+        try {
+            const results = await Promise.allSettled([
+                loadSummary(),
+                loadEnquiries(),
+                loadBookings()
+            ]);
+
+            const errors = results
+                .filter(result => result.status === "rejected")
+                .map(result => result.reason.message);
+
+            if (errors.length) {
+                showNotice([...new Set(errors)].join("\n"), false);
+            }
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    byId("enquiryFilters").addEventListener("submit", event => {
+        event.preventDefault();
+        runAction(loadEnquiries);
+    });
+
+    byId("bookingFilters").addEventListener("submit", event => {
+        event.preventDefault();
+        runAction(loadBookings);
+    });
+
+    byId("clearEnquiry").addEventListener("click", () => {
+        byId("enquiryDate").value = "";
+        runAction(loadEnquiries);
+    });
+
+    byId("clearBooking").addEventListener("click", () => {
+        byId("bookingDate").value = "";
+        byId("bookingStatus").value = "";
+        runAction(loadBookings);
+    });
+
+    byId("refreshButton").addEventListener("click", refreshAll);
+
+    refreshAll();
+</script>
+</body>
+</html>
